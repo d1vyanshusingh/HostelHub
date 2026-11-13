@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HostelHub - Smart Hostel Management System</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+              900: '#312e81',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    /* Custom scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+  </style>
+  <!-- React & Babel CDNs -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body class="bg-slate-50 text-slate-900 antialiased selection:bg-indigo-500 selection:text-white">
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useMemo } = React;
+
+    // --- EMBEDDED SVG ICONS FOR ZERO DEPENDENCY STANDALONE OPERATION ---
+    const Icon = ({ path, className = "w-5 h-5", viewBox = "0 0 24 24" }) => (
+      <svg className={className} viewBox={viewBox} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        {path}
+      </svg>
+    );
+
+    const Icons = {
+      Home: (props) => <Icon {...props} path={<><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></>} />,
+      BedSingle: (props) => <Icon {...props} path={<><path d="M3 20v-8a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v8"/><path d="M5 10V6a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v4"/><path d="M3 18h18"/></>} />,
+      Wrench: (props) => <Icon {...props} path={<><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></>} />,
+      Utensils: (props) => <Icon {...props} path={<><path d="M18 2v6a3 3 0 0 1-3 3 3 3 0 0 1-3-3V2"/><path d="M18 11v11"/><path d="M6 2v10a3 3 0 0 0 3 3 3 3 0 0 0 3-3V2"/><path d="M9 15v7"/></>} />,
+      User: (props) => <Icon {...props} path={<><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></>} />,
+      Search: (props) => <Icon {...props} path={<><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></>} />,
+      Bell: (props) => <Icon {...props} path={<><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></>} />,
+      Phone: (props) => <Icon {...props} path={<><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></>} />,
+      CheckCircle: (props) => <Icon {...props} path={<><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></>} />,
+      Clock: (props) => <Icon {...props} path={<><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></>} />,
+      AlertCircle: (props) => <Icon {...props} path={<><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></>} />,
+      ChevronRight: (props) => <Icon {...props} path={<><polyline points="9 18 15 12 9 6"/></>} />,
+      ChevronDown: (props) => <Icon {...props} path={<><polyline points="6 9 12 15 18 9"/></>} />,
+      LogOut: (props) => <Icon {...props} path={<><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></>} />,
+      Check: (props) => <Icon {...props} path={<><polyline points="20 6 9 17 4 12"/></>} />,
+      Shield: (props) => <Icon {...props} path={<><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></>} />,
+      Users: (props) => <Icon {...props} path={<><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></>} />,
+      DollarSign: (props) => <Icon {...props} path={<><line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></>} />,
+      Building: (props) => <Icon {...props} path={<><rect width="16" height="20" x="4" y="2" rx="2" ry="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M8 10h.01"/><path d="M16 10h.01"/><path d="M8 14h.01"/><path d="M16 14h.01"/></>} />,
+      Download: (props) => <Icon {...props} path={<><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></>} />,
+      Plus: (props) => <Icon {...props} path={<><line x1="12" x2="12" y1="5" y2="19"/><line x1="5" x2="19" y1="12" y2="12"/></>} />,
+      X: (props) => <Icon {...props} path={<><line x1="18" x2="6" y1="6" y2="18"/><line x1="6" x2="18" y1="6" y2="18"/></>} />,
+      CheckSquare: (props) => <Icon {...props} path={<><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></>} />,
+      Send: (props) => <Icon {...props} path={<><line x1="22" x2="11" y1="2" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></>} />,
+      Sparkles: (props) => <Icon {...props} path={<><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3L12 3z"/></>} />
+    };
+
+    // --- MOCK DATABASE ---
+    const MOCK_PROFILES = {
+      student: {
+        role: "student",
+        name: "Alex Doe",
+        email: "alex.doe@hostelhub.edu",
+        regNo: "RA211100301089",
+        degree: "B.Tech Computer Science & Eng.",
+        year: "Year 3 (Sem 6)",
+        block: "Nelson Mandela Block",
+        room: "A-204",
+        bed: "Bed A",
+        category: "3-Sharing AC Deluxe with Bath",
+        mess: "North Dining Hall (Mess II)",
+        phone: "+91 98765 43210",
+        parentName: "Robert Doe",
+        parentPhone: "+91 98765 01234"
+      },
+      warden: {
+        role: "warden",
+        name: "Dr. R. Ramanathan",
+        email: "warden.blocka@hostelhub.edu",
+        regNo: "STAFF-WAR-402",
+        degree: "Chief Hostel Warden - Boys Wing",
+        year: "Senior Faculty & Warden",
+        block: "Nelson Mandela & Tagore Blocks",
+        room: "Warden Office #101",
+        bed: "N/A",
+        category: "Administrative Staff",
+        mess: "Staff & Faculty Dining",
+        phone: "+91 98401 23456",
+        parentName: "N/A",
+        parentPhone: "N/A"
+      },
+      admin: {
+        role: "admin",
+        name: "Dr. Sunita Sharma",
+        email: "admin@hostelhub.edu",
+        regNo: "ADM-DIR-001",
+        degree: "Director of Student Housing & Estate",
+        year: "Chief Executive Admin",
+        block: "Central Administration Tower",
+        room: "Executive Suite 4",
+        bed: "N/A",
+        category: "Estate Directorate",
+        mess: "Executive Dining",
+        phone: "+91 94440 98765",
+        parentName: "N/A",
+        parentPhone: "N/A"
+      }
+    };
+
+    const INITIAL_COMPLAINTS = [
+      { id: "CMP-1082", studentName: "Alex Doe", room: "A-204", block: "Nelson Mandela", category: "Mess / Food Quality", priority: "Medium", description: "Dinner soup was served cold and chapati was undercooked on Wednesday.", date: "18 Aug 2026", status: "Pending", assignedTo: "Mess Supervisor Nair" },
+      { id: "CMP-1077", studentName: "Rohan Verma", room: "A-204", block: "Nelson Mandela", category: "Electrical", priority: "High", description: "Study lamp socket switch sparking occasionally when charging laptop.", date: "14 Aug 2026", status: "In Progress", assignedTo: "Electrician Murugan" },
+      { id: "CMP-0941", studentName: "Alex Doe", room: "A-204", block: "Nelson Mandela", category: "Plumbing", priority: "Low", description: "Washroom basin drain draining slower than normal.", date: "02 Aug 2026", status: "Resolved", assignedTo: "Plumber Selvam" }
+    ];
+
+    const MESS_SCHEDULE = [
+      { day: "Monday", breakfast: "Idli, Medu Vada, Madras Sambar, Coconut Chutney", lunch: "Rajma Masala, Steamed Rice, Butter Roti, Boondi Raita", snacks: "Veg Cutlet, Masala Chai", dinner: "Paneer Butter Masala, Naan, Dal Tadka, Gulab Jamun" },
+      { day: "Tuesday", breakfast: "Aloo Paratha, Fresh Curd, Mixed Pickle, Milk", lunch: "South Indian Thali, Rasam, Sambar, Cabbage Poriyal, Rice", snacks: "Samosa, Hot Filter Coffee", dinner: "Veg Biryani / Egg Biryani, Salan, Raita, Ice Cream" },
+      { day: "Wednesday", breakfast: "Ven Pongal, Ghee Podi, Vada, Chutney", lunch: "Kadhai Paneer, Kashmiri Pulao, Tandoori Roti, Dal Fry", snacks: "Grilled Cheese Sandwich, Lemon Tea", dinner: "Butter Chicken / Malai Kofta (Veg), Garlic Naan, Moong Halwa" },
+      { day: "Thursday", breakfast: "Poha with Peanuts, Upma, Coconut Chutney", lunch: "Dal Makhani, Dum Aloo, Phulka, Cucumber Raita", snacks: "Onion Pakoda, Masala Chai", dinner: "Masala Dosa, Sambar, Assorted Chutneys, Curd Rice" },
+      { day: "Friday", breakfast: "Mysore Masala Dosa, Sambar, Chutney", lunch: "Veg Fried Rice, Veg Manchurian Gravy, Hakka Noodles", snacks: "White Sauce Pasta, Garlic Bread", dinner: "Shahi Paneer, Dal Maharani, Tawa Roti, Fruit Custard" },
+      { day: "Saturday", breakfast: "Uttapam, Sambar, Sambar Vada, Coffee", lunch: "Amritsari Chole Bhature, Pickled Onions, Sweet Lassi", snacks: "Bhel Puri, Masala Chai", dinner: "Malabar Parotta, Veg Kurma, Dal Fry, Semiya Payasam" },
+      { day: "Sunday", breakfast: "Toast with Butter & Jam, Omelette / Sandwich", lunch: "Special Chettinad Chicken Biryani / Royal Paneer Biryani", snacks: "Biscuits, Masala Cookies, Tea", dinner: "Amritsari Kulcha, Paneer Tikka Masala, Kheer" },
+    ];
+
+    const INITIAL_VISITORS = [
+      { id: "VIS-9201", visitorName: "Robert Doe", phone: "+91 98765 01234", studentName: "Alex Doe", room: "A-204", relation: "Father", idType: "Aadhaar Card", checkIn: "09 Nov 2026, 10:15 AM", checkOut: "09 Nov 2026, 01:30 PM", status: "Checked Out" },
+      { id: "VIS-9202", visitorName: "Sunil Verma", phone: "+91 98400 11223", studentName: "Rohan Verma", room: "A-204", relation: "Guardian", idType: "Driving License", checkIn: "09 Nov 2026, 02:20 PM", checkOut: "--", status: "Checked In" },
+      { id: "VIS-9203", visitorName: "Meera Krishnan", phone: "+91 97910 88776", studentName: "Harish Krishnan", room: "B-108", relation: "Mother", idType: "Passport", checkIn: "09 Nov 2026, 03:05 PM", checkOut: "--", status: "Checked In" }
+    ];
+
+    const INITIAL_FEES = [
+      { id: "FEE-01", studentName: "Alex Doe", regNo: "RA211100301089", room: "A-204", totalAmount: 165000, paidAmount: 165000, dueAmount: 0, status: "Paid" },
+      { id: "FEE-02", studentName: "Rohan Verma", regNo: "RA211100301092", room: "A-204", totalAmount: 165000, paidAmount: 165000, dueAmount: 0, status: "Paid" },
+      { id: "FEE-03", studentName: "Karan Patel", regNo: "RA211100301054", room: "B-312", totalAmount: 110000, paidAmount: 60000, dueAmount: 50000, status: "Partial" },
+      { id: "FEE-04", studentName: "Vikram Sethi", regNo: "RA211100301140", room: "B-105", totalAmount: 95000, paidAmount: 0, dueAmount: 95000, status: "Pending" }
+    ];
+
+    function HostelHubApp() {
+      const [isAuthenticated, setIsAuthenticated] = useState(true);
+      const [currentRole, setCurrentRole] = useState('student');
+      const [loginRoleSelected, setLoginRoleSelected] = useState('student');
+      const [activeTab, setActiveTab] = useState('dashboard');
+      
+      const [complaints, setComplaints] = useState(INITIAL_COMPLAINTS);
+      const [visitors, setVisitors] = useState(INITIAL_VISITORS);
+      const [fees, setFees] = useState(INITIAL_FEES);
+      const [toastMsg, setToastMsg] = useState(null);
+      const [isVisitorModalOpen, setIsVisitorModalOpen] = useState(false);
+
+      const currentUser = MOCK_PROFILES[currentRole];
+
+      const triggerToast = (msg) => {
+        setToastMsg(msg);
+        setTimeout(() => setToastMsg(null), 3500);
+      };
+
+      const handleRoleSwitch = (newRole) => {
+        setCurrentRole(newRole);
+        setActiveTab('dashboard');
+        triggerToast(`Switched active view to ${newRole.toUpperCase()} Mode`);
+      };
+
+      const StatusBadge = ({ status }) => {
+        const styles = {
+          Resolved: "bg-emerald-50 text-emerald-700 border-emerald-200",
+          Paid: "bg-emerald-50 text-emerald-700 border-emerald-200",
+          "Checked Out": "bg-slate-100 text-slate-700 border-slate-200",
+          "Checked In": "bg-indigo-50 text-indigo-700 border-indigo-200",
+          Pending: "bg-amber-50 text-amber-700 border-amber-200",
+          Partial: "bg-amber-50 text-amber-700 border-amber-200",
+          "In Progress": "bg-blue-50 text-blue-700 border-blue-200",
+          High: "bg-rose-50 text-rose-700 border-rose-200",
+          Medium: "bg-amber-50 text-amber-700 border-amber-200",
+          Low: "bg-slate-50 text-slate-600 border-slate-200",
+        };
+        return (
+          <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold border ${styles[status] || "bg-slate-100 text-slate-700"}`}>
+            {status}
+          </span>
+        );
+      };
+
+      // AUTHENTICATION VIEW
+      if (!isAuthenticated) {
+        return (
+          <div className="min-h-screen bg-slate-900 flex items-center justify-center p-6">
+            <div className="bg-white rounded-2xl max-w-md w-full p-8 shadow-2xl border border-slate-100">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-black text-xl">H</div>
+                <div>
+                  <h2 className="text-xl font-black text-slate-800">HostelHub</h2>
+                  <p className="text-xs text-slate-400">Smart Hostel Management System</p>
+                </div>
+              </div>
+
+              <div className="mb-6">
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Select User Role</label>
+                <div className="grid grid-cols-3 gap-2 p-1 bg-slate-100 rounded-xl">
+                  {['student', 'warden', 'admin'].map(r => (
+                    <button
+                      key={r}
+                      onClick={() => setLoginRoleSelected(r)}
+                      className={`py-2 text-xs font-bold capitalize rounded-lg transition-all ${loginRoleSelected === r ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-600'}`}
+                    >
+                      {r}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Institutional Email</label>
+                  <input type="text" readOnly value={MOCK_PROFILES[loginRoleSelected].email} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-700 font-medium" />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Security PIN / Password</label>
+                  <input type="password" value="••••••••" readOnly className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-700" />
+                </div>
+                <button
+                  onClick={() => { setCurrentRole(loginRoleSelected); setIsAuthenticated(true); triggerToast(`Logged in as ${loginRoleSelected.toUpperCase()}`); }}
+                  className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-sm shadow-lg shadow-indigo-600/30 transition-all flex items-center justify-center gap-2"
+                >
+                  Enter Portal as {loginRoleSelected.toUpperCase()} →
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      return (
+        <div className="flex h-screen bg-slate-50 overflow-hidden">
+          {/* SIDEBAR */}
+          <aside className="w-64 bg-slate-900 text-slate-300 flex flex-col shrink-0 border-r border-slate-800">
+            <div className="h-16 flex items-center px-6 border-b border-slate-800 bg-slate-950/40">
+              <div className="w-8 h-8 bg-indigo-600 rounded-xl flex items-center justify-center text-white font-black text-lg mr-3 shadow-md">H</div>
+              <div>
+                <span className="text-base font-extrabold text-white">HostelHub</span>
+                <span className="text-[10px] text-indigo-400 font-semibold block uppercase">SRM Campus System</span>
+              </div>
+            </div>
+
+            <div className="p-4 border-b border-slate-800/80">
+              <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-xs font-bold text-white">
+                <span className="capitalize">{currentRole} Portal</span>
+                <button
+                  onClick={() => handleRoleSwitch(currentRole === 'student' ? 'warden' : currentRole === 'warden' ? 'admin' : 'student')}
+                  className="text-indigo-400 hover:text-indigo-300 text-[11px]"
+                >
+                  Switch Role ⇄
+                </button>
+              </div>
+            </div>
+
+            <div className="p-3 flex-1 overflow-y-auto space-y-1">
+              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2 px-3">Main Navigation</p>
+              
+              {currentRole === 'student' && [
+                { id: 'dashboard', label: 'Dashboard', icon: Icons.Home },
+                { id: 'room', label: 'Room & Inventory', icon: Icons.BedSingle },
+                { id: 'complaints', label: 'Maintenance Portal', icon: Icons.Wrench },
+                { id: 'mess', label: 'Weekly Mess Menu', icon: Icons.Utensils },
+                { id: 'fees', label: 'Fee Records', icon: Icons.DollarSign },
+                { id: 'profile', label: 'Student Profile', icon: Icons.User },
+              ].map(item => (
+                <button
+                  key={item.id}
+                  onClick={() => setActiveTab(item.id)}
+                  className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all ${activeTab === item.id ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
+                >
+                  <item.icon className="w-4 h-4" />
+                  {item.label}
+                </button>
+              ))}
+
+              {currentRole === 'warden' && [
+                { id: 'dashboard', label: 'Warden Dashboard', icon: Icons.Home },
+                { id: 'complaints', label: 'Resolve Complaints', icon: Icons.CheckSquare },
+                { id: 'mess', label: 'Mess Schedule', icon: Icons.Utensils },
+                { id: 'profile', label: 'Warden Profile', icon: Icons.User },
+              ].map(item => (
+                <button
+                  key={item.id}
+                  onClick={() => setActiveTab(item.id)}
+                  className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all ${activeTab === item.id ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
+                >
+                  <item.icon className="w-4 h-4" />
+                  {item.label}
+                </button>
+              ))}
+
+              {currentRole === 'admin' && [
+                { id: 'dashboard', label: 'Admin Analytics', icon: Icons.Building },
+                { id: 'visitors', label: 'Visitor Logs', icon: Icons.Users },
+                { id: 'fees', label: 'Fee Master Records', icon: Icons.DollarSign },
+                { id: 'profile', label: 'Admin Settings', icon: Icons.Shield },
+              ].map(item => (
+                <button
+                  key={item.id}
+                  onClick={() => setActiveTab(item.id)}
+                  className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all ${activeTab === item.id ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
+                >
+                  <item.icon className="w-4 h-4" />
+                  {item.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="p-4 border-t border-slate-800">
+              <button
+                onClick={() => setIsAuthenticated(false)}
+                className="w-full py-2 bg-slate-800 hover:bg-slate-700 text-rose-400 rounded-xl text-xs font-bold flex items-center justify-center gap-2"
+              >
+                <Icons.LogOut className="w-4 h-4" /> Sign Out
+              </button>
+            </div>
+          </aside>
+
+          {/* MAIN CONTAINER */}
+          <div className="flex-1 flex flex-col min-w-0">
+            {/* TOP HEADER */}
+            <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 shrink-0">
+              <div className="flex items-center gap-3">
+                <span className="text-sm font-black text-slate-800 uppercase tracking-wide">
+                  {currentRole.toUpperCase()} CONSOLE
+                </span>
+                <span className="text-xs px-2.5 py-0.5 rounded-full font-bold bg-indigo-50 text-indigo-700">
+                  {currentUser.block}
+                </span>
+              </div>
+
+              <div className="flex items-center gap-4">
+                <div className="text-xs text-slate-500 hidden sm:block">
+                  Logged as: <strong className="text-slate-800">{currentUser.name}</strong>
+                </div>
+                <button
+                  onClick={() => handleRoleSwitch(currentRole === 'student' ? 'warden' : currentRole === 'warden' ? 'admin' : 'student')}
+                  className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold"
+                >
+                  Switch Role View
+                </button>
+              </div>
+            </header>
+
+            {/* CONTENT VIEWS */}
+            <main className="flex-1 overflow-y-auto p-6 md:p-8">
+              <div className="max-w-6xl mx-auto space-y-6">
+
+                {/* ROLE: STUDENT DASHBOARD */}
+                {currentRole === 'student' && activeTab === 'dashboard' && (
+                  <div className="space-y-6">
+                    <div className="bg-gradient-to-r from-indigo-700 to-indigo-900 rounded-2xl p-6 text-white shadow-xl flex justify-between items-center">
+                      <div>
+                        <h1 className="text-2xl font-black">Welcome back, {currentUser.name}!</h1>
+                        <p className="text-indigo-200 text-xs mt-1">Hostel Block: {currentUser.block} • Room {currentUser.room} ({currentUser.bed})</p>
+                      </div>
+                      <button onClick={() => setActiveTab('complaints')} className="px-4 py-2 bg-white text-indigo-700 rounded-xl text-xs font-bold shadow">
+                        + Raise Ticket
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                      <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                        <p className="text-xs font-bold text-slate-400 uppercase">Allocated Room</p>
+                        <h3 className="text-xl font-black text-indigo-600 mt-1">{currentUser.room} ({currentUser.bed})</h3>
+                        <p className="text-xs text-slate-500 mt-1">AC with Attached Bath</p>
+                      </div>
+                      <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                        <p className="text-xs font-bold text-slate-400 uppercase">Active Complaints</p>
+                        <h3 className="text-xl font-black text-amber-600 mt-1">{complaints.filter(c => c.status !== 'Resolved').length} Active</h3>
+                        <p className="text-xs text-slate-500 mt-1">Tracked in portal</p>
+                      </div>
+                      <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                        <p className="text-xs font-bold text-slate-400 uppercase">Assigned Mess</p>
+                        <h3 className="text-xl font-black text-emerald-600 mt-1">North Dining</h3>
+                        <p className="text-xs text-slate-500 mt-1">Mess Hall 2</p>
+                      </div>
+                      <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                        <p className="text-xs font-bold text-slate-400 uppercase">Hostel Fee</p>
+                        <h3 className="text-xl font-black text-blue-600 mt-1">₹0 Due</h3>
+                        <p className="text-xs text-emerald-600 font-bold mt-1">Paid in Full</p>
+                      </div>
+                    </div>
+
+                    <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
+                      <h3 className="font-bold text-slate-800 mb-3">Today's Dining Specials ({MESS_SCHEDULE[0].day})</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                        <div className="p-3 bg-slate-50 rounded-lg border border-slate-100">
+                          <span className="font-bold text-slate-500 block mb-1">BREAKFAST (07:30 - 09:30 AM)</span>
+                          <p className="text-slate-800">{MESS_SCHEDULE[0].breakfast}</p>
+                        </div>
+                        <div className="p-3 bg-slate-50 rounded-lg border border-slate-100">
+                          <span className="font-bold text-slate-500 block mb-1">LUNCH (11:30 - 01:30 PM)</span>
+                          <p className="text-slate-800">{MESS_SCHEDULE[0].lunch}</p>
+                        </div>
+                        <div className="p-3 bg-slate-50 rounded-lg border border-slate-100">
+                          <span className="font-bold text-slate-500 block mb-1">DINNER (07:30 - 09:30 PM)</span>
+                          <p className="text-slate-800">{MESS_SCHEDULE[0].dinner}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* ROLE: WARDEN DASHBOARD */}
+                {currentRole === 'warden' && (
+                  <div className="space-y-6">
+                    <div className="bg-slate-900 rounded-2xl p-6 text-white shadow-xl flex justify-between items-center">
+                      <div>
+                        <h1 className="text-2xl font-black">Warden Administration Panel</h1>
+                        <p className="text-slate-300 text-xs mt-1">Mandela & Tagore Residential Complexes • Hostellers In-Campus: 1,248</p>
+                      </div>
+                      <span className="px-3 py-1 bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 rounded-full text-xs font-bold">
+                        Warden On Duty
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                        <p className="text-xs font-bold text-slate-400 uppercase">Total Students</p>
+                        <h3 className="text-2xl font-black text-slate-800 mt-1">1,248 Hostellers</h3>
+                        <p className="text-xs text-emerald-600 font-semibold mt-1">96.5% In Campus</p>
+                      </div>
+                      <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                        <p className="text-xs font-bold text-slate-400 uppercase">Available Rooms</p>
+                        <h3 className="text-2xl font-black text-emerald-600 mt-1">38 Vacant Beds</h3>
+                        <p className="text-xs text-slate-500 mt-1">412 / 450 Occupied</p>
+                      </div>
+                      <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                        <p className="text-xs font-bold text-slate-400 uppercase">Pending Complaints</p>
+                        <h3 className="text-2xl font-black text-amber-600 mt-1">{complaints.filter(c => c.status === 'Pending').length} Pending</h3>
+                        <p className="text-xs text-rose-500 font-semibold mt-1">Requires Warden Action</p>
+                      </div>
+                    </div>
+
+                    {/* Actionable Complaints Table for Warden */}
+                    <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                      <div className="p-5 bg-slate-50 border-b border-slate-100 flex justify-between items-center">
+                        <h3 className="font-bold text-slate-800">Actionable Student Maintenance Queue</h3>
+                        <span className="text-xs text-slate-500">Click button to resolve or update</span>
+                      </div>
+                      <table className="w-full text-left text-xs">
+                        <thead className="bg-slate-100 text-slate-500 uppercase">
+                          <tr>
+                            <th className="py-3 px-4 font-bold">Ticket</th>
+                            <th className="py-3 px-4 font-bold">Student & Room</th>
+                            <th className="py-3 px-4 font-bold">Category</th>
+                            <th className="py-3 px-4 font-bold">Priority</th>
+                            <th className="py-3 px-4 font-bold">Status</th>
+                            <th className="py-3 px-4 font-bold text-right">Action</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          {complaints.map(t => (
+                            <tr key={t.id} className="hover:bg-slate-50">
+                              <td className="py-3.5 px-4 font-bold text-indigo-700">#{t.id}</td>
+                              <td className="py-3.5 px-4"><strong>{t.studentName}</strong> ({t.room})</td>
+                              <td className="py-3.5 px-4">{t.category}</td>
+                              <td className="py-3.5 px-4"><StatusBadge status={t.priority} /></td>
+                              <td className="py-3.5 px-4"><StatusBadge status={t.status} /></td>
+                              <td className="py-3.5 px-4 text-right">
+                                {t.status !== 'Resolved' ? (
+                                  <button
+                                    onClick={() => {
+                                      setComplaints(complaints.map(item => item.id === t.id ? { ...item, status: 'Resolved' } : item));
+                                      triggerToast(`Ticket #${t.id} marked as RESOLVED`);
+                                    }}
+                                    className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold shadow"
+                                  >
+                                    ✓ Approve & Resolve
+                                  </button>
+                                ) : (
+                                  <span className="text-xs font-bold text-emerald-600">Resolved</span>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                {/* ROLE: ADMIN DASHBOARD */}
+                {currentRole === 'admin' && (
+                  <div className="space-y-6">
+                    <div className="bg-indigo-950 rounded-2xl p-6 text-white shadow-xl flex justify-between items-center">
+                      <div>
+                        <h1 className="text-2xl font-black">Executive Admin Dashboard</h1>
+                        <p className="text-indigo-200 text-xs mt-1">Hostel Governance & Macro Financial Directorate</p>
+                      </div>
+                      <button
+                        onClick={() => setIsVisitorModalOpen(true)}
+                        className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold shadow"
+                      >
+                        + Issue Visitor Pass
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                      <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                        <p className="text-xs font-bold text-slate-400 uppercase">Hostel Capacity</p>
+                        <h3 className="text-xl font-black text-slate-800 mt-1">1,500 Beds</h3>
+                        <p className="text-xs text-indigo-600 font-bold mt-1">94.2% Occupied</p>
+                      </div>
+                      <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                        <p className="text-xs font-bold text-slate-400 uppercase">Annual Revenue</p>
+                        <h3 className="text-xl font-black text-emerald-600 mt-1">₹3.18 Cr</h3>
+                        <p className="text-xs text-slate-500 mt-1">97.8% Collection Rate</p>
+                      </div>
+                      <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                        <p className="text-xs font-bold text-slate-400 uppercase">Active Visitors</p>
+                        <h3 className="text-xl font-black text-amber-600 mt-1">{visitors.filter(v => v.status === 'Checked In').length} Inside</h3>
+                        <p className="text-xs text-slate-500 mt-1">{visitors.length} Logged Today</p>
+                      </div>
+                      <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                        <p className="text-xs font-bold text-slate-400 uppercase">Pending Dues</p>
+                        <h3 className="text-xl font-black text-rose-600 mt-1">₹1.45 L</h3>
+                        <p className="text-xs text-slate-500 mt-1">2 Students Pending</p>
+                      </div>
+                    </div>
+
+                    {/* Visitor Logs Table */}
+                    <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                      <div className="p-5 bg-slate-50 border-b border-slate-100 flex justify-between items-center">
+                        <h3 className="font-bold text-slate-800">Campus Visitor Gate Management</h3>
+                        <button onClick={() => setIsVisitorModalOpen(true)} className="text-xs text-indigo-600 font-bold hover:underline">+ Log New Visitor</button>
+                      </div>
+                      <table className="w-full text-left text-xs">
+                        <thead className="bg-slate-100 text-slate-500 uppercase">
+                          <tr>
+                            <th className="py-3 px-4 font-bold">Pass ID</th>
+                            <th className="py-3 px-4 font-bold">Visitor Name</th>
+                            <th className="py-3 px-4 font-bold">Student Visited</th>
+                            <th className="py-3 px-4 font-bold">Check-In</th>
+                            <th className="py-3 px-4 font-bold">Status</th>
+                            <th className="py-3 px-4 font-bold text-right">Gate Action</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          {visitors.map(v => (
+                            <tr key={v.id} className="hover:bg-slate-50">
+                              <td className="py-3.5 px-4 font-bold text-indigo-700">{v.id}</td>
+                              <td className="py-3.5 px-4 font-semibold text-slate-800">{v.visitorName} ({v.relation})</td>
+                              <td className="py-3.5 px-4">{v.studentName} - Room {v.room}</td>
+                              <td className="py-3.5 px-4 text-slate-500">{v.checkIn}</td>
+                              <td className="py-3.5 px-4"><StatusBadge status={v.status} /></td>
+                              <td className="py-3.5 px-4 text-right">
+                                {v.status === 'Checked In' ? (
+                                  <button
+                                    onClick={() => {
+                                      setVisitors(visitors.map(item => item.id === v.id ? { ...item, status: 'Checked Out', checkOut: 'Now' } : item));
+                                      triggerToast(`Visitor #${v.id} checked out.`);
+                                    }}
+                                    className="px-2.5 py-1 bg-rose-50 text-rose-700 hover:bg-rose-100 rounded border border-rose-200 font-bold"
+                                  >
+                                    Check Out
+                                  </button>
+                                ) : (
+                                  <span className="text-slate-400">Out</span>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                {/* STUDENT SUB-VIEWS */}
+                {currentRole === 'student' && activeTab === 'room' && (
+                  <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm space-y-4">
+                    <h2 className="text-xl font-bold text-slate-800">Room Specifications & Inventory</h2>
+                    <p className="text-xs text-slate-500">Block: {currentUser.block} • Room: {currentUser.room} ({currentUser.bed})</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
+                      <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 space-y-2 text-xs">
+                        <p className="font-bold text-slate-700">Room Residents</p>
+                        <p>• Alex Doe (Bed A - You)</p>
+                        <p>• Rohan Verma (Bed B - B.Tech IT)</p>
+                        <p>• Siddharth Rao (Bed C - B.Tech AI & DS)</p>
+                      </div>
+                      <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 space-y-2 text-xs">
+                        <p className="font-bold text-slate-700">Verified Room Inventory</p>
+                        <p>✓ 1 Single Wooden Bed & Ortho Mattress</p>
+                        <p>✓ 1 Study Desk & Ergonomic Chair</p>
+                        <p>✓ 1 Modular Steel Wardrobe with Locker</p>
+                        <p>✓ 1 1.5 Ton Split AC & Remote</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {currentRole === 'student' && activeTab === 'complaints' && (
+                  <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm space-y-6">
+                    <h2 className="text-xl font-bold text-slate-800">Complaint Management</h2>
+                    <form onSubmit={(e) => {
+                      e.preventDefault();
+                      const form = e.target;
+                      const newTicket = {
+                        id: `CMP-${Math.floor(2000 + Math.random() * 8000)}`,
+                        studentName: currentUser.name,
+                        room: currentUser.room,
+                        block: currentUser.block,
+                        category: form.category.value,
+                        priority: form.priority.value,
+                        description: form.description.value,
+                        date: "Today",
+                        status: "Pending"
+                      };
+                      setComplaints([newTicket, ...complaints]);
+                      form.reset();
+                      triggerToast(`Complaint ticket #${newTicket.id} registered!`);
+                    }} className="space-y-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <select name="category" required className="p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-700">
+                          <option value="">Select category...</option>
+                          <option value="Electrical">Electrical</option>
+                          <option value="Plumbing">Plumbing</option>
+                          <option value="Mess / Food Quality">Mess / Food Quality</option>
+                          <option value="Housekeeping">Housekeeping</option>
+                        </select>
+                        <select name="priority" className="p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-700">
+                          <option value="Low">Low</option>
+                          <option value="Medium">Medium</option>
+                          <option value="High">High</option>
+                        </select>
+                      </div>
+                      <textarea name="description" required placeholder="Describe issue in detail..." rows="3" className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-xs"></textarea>
+                      <button type="submit" className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow">
+                        Submit Complaint Ticket
+                      </button>
+                    </form>
+
+                    <h3 className="font-bold text-slate-800 pt-4">Existing Tickets</h3>
+                    <div className="divide-y divide-slate-100 text-xs">
+                      {complaints.map(c => (
+                        <div key={c.id} className="py-3 flex justify-between items-center">
+                          <div>
+                            <span className="font-bold text-indigo-700">#{c.id}</span> • {c.category} ({c.description})
+                          </div>
+                          <StatusBadge status={c.status} />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {currentRole === 'student' && activeTab === 'mess' && (
+                  <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm space-y-4">
+                    <h2 className="text-xl font-bold text-slate-800">Weekly 7-Day Dining Schedule</h2>
+                    <table className="w-full text-left text-xs">
+                      <thead className="bg-slate-50 text-slate-500 uppercase">
+                        <tr>
+                          <th className="py-2.5 px-3">Day</th>
+                          <th className="py-2.5 px-3">Breakfast</th>
+                          <th className="py-2.5 px-3">Lunch</th>
+                          <th className="py-2.5 px-3">Dinner</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {MESS_SCHEDULE.map(m => (
+                          <tr key={m.day}>
+                            <td className="py-3 px-3 font-bold text-slate-800">{m.day}</td>
+                            <td className="py-3 px-3 text-slate-600">{m.breakfast}</td>
+                            <td className="py-3 px-3 text-slate-600">{m.lunch}</td>
+                            <td className="py-3 px-3 text-slate-600">{m.dinner}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
+                {currentRole === 'student' && activeTab === 'fees' && (
+                  <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm space-y-4">
+                    <h2 className="text-xl font-bold text-slate-800">Hostel Fee Payment Records</h2>
+                    <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl flex justify-between items-center text-xs">
+                      <div>
+                        <p className="font-bold text-emerald-800 text-sm">Status: 100% Cleared (₹0 Due)</p>
+                        <p className="text-emerald-700">Annual Hostel Fee: ₹1,65,000 (Paid on 15 Jul 2026 via NetBanking)</p>
+                      </div>
+                      <button onClick={() => triggerToast('Official Receipt PDF downloaded.')} className="px-3 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg font-bold">
+                        Download Receipt
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {activeTab === 'profile' && (
+                  <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm space-y-4">
+                    <h2 className="text-xl font-bold text-slate-800">User Profile Record</h2>
+                    <div className="grid grid-cols-2 gap-4 text-xs">
+                      <div className="p-3 bg-slate-50 rounded-lg"><strong>Name:</strong> {currentUser.name}</div>
+                      <div className="p-3 bg-slate-50 rounded-lg"><strong>Registration No:</strong> {currentUser.regNo}</div>
+                      <div className="p-3 bg-slate-50 rounded-lg"><strong>Email:</strong> {currentUser.email}</div>
+                      <div className="p-3 bg-slate-50 rounded-lg"><strong>Role:</strong> {currentUser.role.toUpperCase()}</div>
+                    </div>
+                  </div>
+                )}
+
+              </div>
+            </main>
+          </div>
+
+          {/* VISITOR MODAL */}
+          {isVisitorModalOpen && (
+            <div className="fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-4">
+              <div className="bg-white rounded-xl max-w-md w-full p-6 shadow-2xl space-y-4">
+                <div className="flex justify-between items-center">
+                  <h3 className="font-bold text-slate-800">Log New Visitor</h3>
+                  <button onClick={() => setIsVisitorModalOpen(false)} className="text-slate-400 hover:text-slate-600 font-bold">✕</button>
+                </div>
+                <form onSubmit={(e) => {
+                  e.preventDefault();
+                  const form = e.target;
+                  const newVis = {
+                    id: `VIS-${Math.floor(9300 + Math.random() * 600)}`,
+                    visitorName: form.vName.value,
+                    phone: form.vPhone.value,
+                    studentName: form.sName.value,
+                    room: form.room.value,
+                    relation: form.relation.value,
+                    idType: "Aadhaar Card",
+                    checkIn: "Just now",
+                    checkOut: "--",
+                    status: "Checked In"
+                  };
+                  setVisitors([newVis, ...visitors]);
+                  setIsVisitorModalOpen(false);
+                  triggerToast(`Gate Pass issued for ${newVis.visitorName}`);
+                }} className="space-y-3 text-xs">
+                  <input name="vName" required placeholder="Visitor Full Name" className="w-full p-2 border rounded-lg" />
+                  <input name="vPhone" required placeholder="Phone Number" className="w-full p-2 border rounded-lg" />
+                  <input name="sName" required defaultValue="Alex Doe" placeholder="Student Name" className="w-full p-2 border rounded-lg" />
+                  <input name="room" required defaultValue="A-204" placeholder="Room Number" className="w-full p-2 border rounded-lg" />
+                  <select name="relation" className="w-full p-2 border rounded-lg">
+                    <option value="Parent">Parent</option>
+                    <option value="Guardian">Guardian</option>
+                    <option value="Sibling">Sibling</option>
+                  </select>
+                  <div className="flex justify-end gap-2 pt-2">
+                    <button type="button" onClick={() => setIsVisitorModalOpen(false)} className="px-3 py-1.5 bg-slate-100 rounded-lg">Cancel</button>
+                    <button type="submit" className="px-4 py-1.5 bg-indigo-600 text-white font-bold rounded-lg">Issue Pass</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* FLOATING TOAST */}
+          {toastMsg && (
+            <div className="fixed bottom-6 right-6 z-50 bg-slate-900 text-white px-5 py-3 rounded-xl shadow-xl border border-slate-700 text-xs font-semibold">
+              ✓ {toastMsg}
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<HostelHubApp />);
+  </script>
+</body>
+</html>
